@@ -73,7 +73,7 @@ printTermHelper(struct Term *term, struct Buffer *buffer, _Bool withParen) {
         break;
     case TERM_APPLICATION:
         if (!term->application) goto itsnull;
-		if (withParen) appendStr(buffer, "(");
+        if (withParen) appendStr(buffer, "(");
         printTermHelper(term->application->function, buffer, 
                 isAbstraction(term->application->function));
         appendStr(buffer, " ");
@@ -95,7 +95,7 @@ printTermHelper(struct Term *term, struct Buffer *buffer, _Bool withParen) {
         } else {
             printTermHelper(term, buffer, false);
         }
-		if (withParen) appendStr(buffer, ")");
+        if (withParen) appendStr(buffer, ")");
     }
     return;
 itsnull:
@@ -104,7 +104,7 @@ itsnull:
 
 static void 
 printTerm(struct Term *term, struct Buffer *buffer) {
-	printTermHelper(term, buffer, false);
+    printTermHelper(term, buffer, false);
 }
 
 /* TODO: Make tests.
