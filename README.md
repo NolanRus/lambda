@@ -4,15 +4,15 @@
 
 ```
 x
-xx
-xx x
-x(x x)
+x x
+x x x
+x (x x)
 (\x . x) x
-x(\x . x)
-xx (x x) x
+x (\x . x)
+x x (x x) x
 \x y . y (x x)
 \x y z . x (y z)
 \x . x x (x x)
-xx (\x . x (\x . x)) x
+x x (\x . x (\x . x)) x
 (\x . x x) (\y z . z x y) (x x x)
 ```
