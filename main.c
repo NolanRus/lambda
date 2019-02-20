@@ -160,5 +160,5 @@ int main() {
     for (size_t i = 0; i < n; ++i) {
         check(terms[i]);
     }
-    fprintf(stderr, "ALL TESTS PASSED");
+    fprintf(stderr, "ALL TESTS PASSED\n");
 }
