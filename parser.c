@@ -9,6 +9,51 @@
 
 #define MAX_NAME_LEN 63
 
+struct Variable *
+makeVariable(char *name) {
+    struct Variable *variable = malloc(sizeof(struct Variable));
+    variable->name = name;
+    return variable;
+}
+
+static struct Term *
+makeTermVariable(char *name) {
+    struct Term *term = malloc(sizeof(struct Term));
+    *term = (struct Term) {
+        .type = TERM_VARIABLE,
+        .variable = makeVariable(name),
+    };
+    return term;
+}
+
+static struct Term *
+makeTermApplication(struct Term *function, struct Term *argument) {
+    struct Term *term = malloc(sizeof(struct Term));
+    *term = (struct Term) {
+        .type = TERM_APPLICATION,
+        .application = malloc(sizeof(struct Application)),
+    };
+    *term->application = (struct Application) {
+        .function = function,
+        .argument = argument,
+    };
+    return term;
+}
+
+static struct Term *
+makeTermAbstraction(char *name, struct Term *body) {
+    struct Term *term = malloc(sizeof(struct Term));
+    *term = (struct Term) {
+        .type = TERM_ABSTRACTION,
+        .abstraction = malloc(sizeof(struct Abstraction)),
+    };
+    *term->abstraction = (struct Abstraction) {
+        .parameter = makeVariable(name),
+        .body = body,
+    };
+    return term;
+}
+
 extern void 
 freeTerm(struct Term *term) {
     if (!term) return;
@@ -183,21 +228,8 @@ parseAbstraction(struct ParserState *parser, struct Term **result) {
     struct Term *term = NULL;
     struct Term **termPtr = &term;
     while (T_VARIABLE == parser->token) {
-        struct Variable *variable = malloc(sizeof(struct Variable));
-        *variable = (struct Variable) {
-            .name = parser->variable,
-        };
-        struct Abstraction *abstraction = malloc(sizeof(struct Variable));
-        *abstraction = (struct Abstraction) {
-            .parameter = variable,
-            .body = NULL,
-        };
-        *termPtr = malloc(sizeof(struct Term));
-        **termPtr = (struct Term) {
-            .type = TERM_ABSTRACTION,
-            .abstraction = abstraction,
-        };
-        termPtr = &abstraction->body;
+        *termPtr = makeTermAbstraction(parser->variable, NULL);
+        termPtr = &(*termPtr)->abstraction->body;
         e = nextToken(parser);
         if (e) break;
     }
@@ -221,28 +253,19 @@ parseAbstraction(struct ParserState *parser, struct Term **result) {
 }
 
 static enum Error 
-parseRightOfApplication(struct ParserState *parser, struct Term *left, struct Term **result) {
+parseRightOfApplication(struct ParserState *parser, struct Term *function, struct Term **result) {
     enum Error e;
     if (T_BACK_SLASH == parser->token) {
-        struct Term *right = NULL;
-        e = parseAbstraction(parser, &right);
+        struct Term *argument = NULL;
+        e = parseAbstraction(parser, &argument);
         if (e) return e;
-        struct Application *application = malloc(sizeof(struct Application));
-        *application = (struct Application) {
-            .function = left,
-            .argument = right,
-        };
-        *result = malloc(sizeof(struct Term));
-        **result = (struct Term) {
-            .type = TERM_APPLICATION,
-            .application = application,
-        };
+        *result = makeTermApplication(function, argument);
         return E_OK;
     } else if (T_LEFT_PAREN == parser->token) {
         e = nextToken(parser);
         if (e) return e;
-        struct Term *right;
-        e = parseTerm(parser, &right);
+        struct Term *argument;
+        e = parseTerm(parser, &argument);
         if (e) return e;
         if (T_RIGHT_PAREN != parser->token) {
             parser->errorMessage = "Expected ).";
@@ -250,41 +273,15 @@ parseRightOfApplication(struct ParserState *parser, struct Term *left, struct Te
         }
         e = nextToken(parser);
         if (e) return e;
-        struct Application *application = malloc(sizeof(struct Application));
-        *application = (struct Application) {
-            .function = left,
-            .argument = right,
-        };
-        struct Term *term = malloc(sizeof(struct Term));
-        *term = (struct Term) {
-            .type = TERM_APPLICATION,
-            .application = application
-        };
+        struct Term *term = makeTermApplication(function, argument);
         e = parseRightOfApplication(parser, term, result);
         if (e) {
             freeTerm(term);
         }
         return e;
     } else if (T_VARIABLE == parser->token) {
-        struct Variable *variable = malloc(sizeof(struct Variable));
-        *variable = (struct Variable) {
-            .name = parser->variable,
-        };
-        struct Term *argument = malloc(sizeof(struct Term));
-        *argument = (struct Term) {
-            .type = TERM_VARIABLE,
-            .variable = variable,
-        };
-        struct Application *application = malloc(sizeof(struct Application));
-        *application = (struct Application) {
-            .function = left,
-            .argument = argument,
-        };
-        struct Term *term = malloc(sizeof(struct Term));
-        *term = (struct Term) {
-            .type = TERM_APPLICATION,
-            .application = application,
-        };
+        struct Term *argument = makeTermVariable(parser->variable);
+        struct Term *term = makeTermApplication(function, argument);
         e = nextToken(parser);
         if (e) return e;
         e = parseRightOfApplication(parser, term, result);
@@ -293,7 +290,7 @@ parseRightOfApplication(struct ParserState *parser, struct Term *left, struct Te
         }
         return e;
     } else {
-        *result = left;
+        *result = function;
         return E_OK;
     }
 }
@@ -324,15 +321,7 @@ parseTerm(struct ParserState *parser, struct Term **term) {
         }
         return e;
     } else if (T_VARIABLE == parser->token) {
-        struct Variable *variable = malloc(sizeof(struct Variable));
-        *variable = (struct Variable) {
-            .name = parser->variable,
-        };
-        struct Term *left = malloc(sizeof(struct Term));
-        *left = (struct Term) {
-            .type = TERM_VARIABLE,
-            .variable = variable
-        };
+        struct Term *left = makeTermVariable(parser->variable);
         e = nextToken(parser);
         if (e) {
             freeTerm(left);
