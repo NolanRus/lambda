@@ -107,18 +107,6 @@ printTerm(struct Term *term, struct Buffer *buffer) {
     printTermHelper(term, buffer, false);
 }
 
-/* TODO: Make tests.
- * Examples:
- * x
- * x x
- * (x x) x
- * x (x x)
- * \x y . y (x x)
- * \x y z . x (y z)
- * \x . (x x) (x x)
- * \x . \y . (x x) (x x)
- */
-
 static const char *terms[] = {
     "x",
     "x x",
@@ -155,10 +143,33 @@ static void check(const char *input) {
     freeBuffer(buffer);
 }
 
-int main() {
-    size_t n = sizeof(terms) / sizeof(terms[0]);
-    for (size_t i = 0; i < n; ++i) {
-        check(terms[i]);
-    }
-    fprintf(stderr, "ALL TESTS PASSED\n");
+void printUsage(char *program) {
+    fprintf(stderr, "Usage: %s test\n", program);
+    exit(1);
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) printUsage(argv[0]);
+    if (!strcmp(argv[1], "test")) {
+        size_t n = sizeof(terms) / sizeof(terms[0]);
+        for (size_t i = 0; i < n; ++i) {
+            check(terms[i]);
+        }
+        fprintf(stderr, "ALL TESTS PASSED\n");
+    } else if (!strcmp(argv[1], "parse")) {
+        struct Term *term;
+        struct ErrorInfo errorInfo;
+        char input[512];
+        if (!fgets(input, sizeof(input), stdin)) exit(1);
+        enum Error error = parse(input, strlen(input), &term, &errorInfo);
+        if (error) {
+            fprintf(stderr, "Error: %s\n", errorInfo.errorMessage);
+            fprintf(stderr, "%s", errorInfo.lineStart);
+            for (size_t i = 0; i < errorInfo.lineOffset - 3; ++i) {
+                fputc(' ', stderr);
+            }
+            fputs("~~~^~~~\n", stderr);
+            exit(1);
+        } 
+    } else printUsage(argv[0]);
 }

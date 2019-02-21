@@ -187,10 +187,12 @@ nextToken(struct ParserState *parser) {
         parser->token = T_VARIABLE;
         parser->variable = variable;
         if (i == MAX_NAME_LEN) {
+            parser->errorMessage = "Name is too long.";
             return E_NAME_TOO_LONG;
         }
         return E_OK;
     }
+    parser->errorMessage = "Unknown token.";
     return E_UNKNOWN_TOKEN;
 }
 
@@ -231,7 +233,7 @@ parseAbstraction(struct ParserState *parser, struct Term **result) {
         *termPtr = makeTermAbstraction(parser->variable, NULL);
         termPtr = &(*termPtr)->abstraction->body;
         e = nextToken(parser);
-        if (e) break;
+        if (e) return e;
     }
     if (T_POINT != parser->token) {
         freeTerm(term);
@@ -348,7 +350,7 @@ parse(const char *input, size_t size, struct Term **term, struct ErrorInfo *erro
         .variable = NULL,
         .lineNumber = 1,
         .lineOffset = 0,
-        .lineStart = NULL,
+        .lineStart = input,
         .errorMessage = "",
         .newLine = false,
     };
