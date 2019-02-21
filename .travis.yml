@@ -1,3 +1,3 @@
 language: c
 install: make
-script: ./a.out
+script: ./a.out test
